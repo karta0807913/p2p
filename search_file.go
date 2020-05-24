@@ -112,7 +112,7 @@ func (self SearchAndShareFile) ToBroadcastAddress(ip net.IP) (net.IP, error) {
 	return broadcast_ipaddr, nil
 }
 
-func (self SearchAndShareFile) broadcast() {
+func (self *SearchAndShareFile) broadcast() {
 	log.Printf("broadcast to %s\n", self.broadcast_ip)
 	code := make([]string, 0, 5)
 	for val := range self.code {
@@ -186,6 +186,7 @@ func (self *SearchAndShareFile) sendResponse(pkg SearchPacket) {
 
 func (self *SearchAndShareFile) Start(broadcast_time time.Duration) {
 	if self.stop != nil {
+		self.stop <- 1
 		return
 	}
 	self.stop = make(chan int)
@@ -193,22 +194,28 @@ func (self *SearchAndShareFile) Start(broadcast_time time.Duration) {
 
 	self.broadcast()
 	go func() {
+		stop := false
 	SearchFile:
 		for {
 			select {
 			case <-self.timer.C:
+				if stop {
+					continue
+				}
 				self.timer.Reset(broadcast_time)
 				self.broadcast()
 			case val := <-self.stop:
 				if val == 0 {
+					stop = true
 					self.timer.Stop()
 				} else if val == 1 {
+					stop = false
 					self.timer.Reset(broadcast_time)
 				} else {
 					self.timer.Stop()
 					self.conn.Close()
+					break SearchFile
 				}
-				break SearchFile
 			}
 		}
 	}()

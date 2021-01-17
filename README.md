@@ -22,3 +22,15 @@ Arguments:
   -o  --output_path  path for storage. Default: ./output
   -s  --share_path   which file want to share. Default:
 ```
+
+## Example
+
+Sender
+```
+$ p2p -c foo -s ./shared_file
+```
+
+Receiver
+```
+$ p2p -c foo -o ./save_path
+```
